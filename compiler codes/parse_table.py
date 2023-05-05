@@ -47,26 +47,15 @@ def removeLeftRecursion(rulesDiction):
 
 
 def LeftFactoring(rulesDiction):
-    # for rule: A->aDF|aCV|k
-    # result: A->aA'|k, A'->DF|CV
-
-    # newDict stores newly generated
-    # - rules after left factoring
     newDict = {}
-    # iterate over all rules of dictionary
     for lhs in rulesDiction:
-        # get rhs for given lhs
         allrhs = rulesDiction[lhs]
-        # temp dictionary helps detect left factoring
         temp = dict()
         for subrhs in allrhs:
             if subrhs[0] not in list(temp.keys()):
                 temp[subrhs[0]] = [subrhs]
             else:
                 temp[subrhs[0]].append(subrhs)
-        # if value list count for any key in temp is > 1,
-        # - it has left factoring
-        # new_rule stores new subrules for current LHS symbol
         new_rule = []
         # temp_dict stores new subrules for left factoring
         tempo_dict = {}
@@ -74,9 +63,6 @@ def LeftFactoring(rulesDiction):
             # get value from temp for term_key
             allStartingWithTermKey = temp[term_key]
             if len(allStartingWithTermKey) > 1:
-                # left factoring required
-                # to generate new unique symbol
-                # - add ' till unique not generated
                 lhs_ = lhs + "'"
                 while (lhs_ in rulesDiction.keys()) or (lhs_ in tempo_dict.keys()):
                     lhs_ += "'"
@@ -101,26 +87,18 @@ def LeftFactoring(rulesDiction):
 # calculation of first
 # epsilon is denoted by '#' (semi-colon)
 
-
-# pass rule in first function
 def first(rule):
     global rules, nonterm_userdef, term_userdef, diction, firsts
-    # recursion base condition
-    # (for terminal or epsilon)
     if len(rule) != 0 and (rule is not None):
         if rule[0] in term_userdef:
             return rule[0]
         elif rule[0] == "#":
             return "#"
 
-    # condition for Non-Terminals
     if len(rule) != 0:
         if rule[0] in list(diction.keys()):
-            # fres temporary list of result
             fres = []
             rhs_rules = diction[rule[0]]
-            # call first on each rule of RHS
-            # fetched (& take union)
             for itr in rhs_rules:
                 indivRes = first(itr)
                 if type(indivRes) is list:
@@ -129,13 +107,9 @@ def first(rule):
                 else:
                     fres.append(indivRes)
 
-            # if no epsilon in result
-            # - received return fres
             if "#" not in fres:
                 return fres
             else:
-                # apply epsilon
-                # rule => f(ABC)=f(A)-{e} U f(BC)
                 newList = []
                 fres.remove("#")
                 if len(rule) > 1:
@@ -148,51 +122,28 @@ def first(rule):
                     else:
                         newList = fres
                     return newList
-                # if result is not already returned
-                # - control reaches here
-                # lastly if eplison still persists
-                # - keep it in result of first
                 fres.append("#")
                 return fres
 
 
 # calculation of follow
 # use 'rules' list, and 'diction' dict from above
-
-
-# follow function input is the split result on
-# - Non-Terminal whose Follow we want to compute
 def follow(nt):
     global start_symbol, rules, nonterm_userdef, term_userdef, diction, firsts, follows
-    # for start symbol return $ (recursion base case)
-
     solset = set()
     if nt == start_symbol:
         # return '$'
         solset.add("$")
 
-    # check all occurrences
-    # solset - is result of computed 'follow' so far
-
-    # For input, check in all rules
     for curNT in diction:
         rhs = diction[curNT]
-        # go for all productions of NT
         for subrule in rhs:
             if nt in subrule:
-                # call for all occurrences on
-                # - non-terminal in subrule
                 while nt in subrule:
                     index_nt = subrule.index(nt)
                     subrule = subrule[index_nt + 1 :]
-                    # empty condition - call follow on LHS
                     if len(subrule) != 0:
-                        # compute first if symbols on
-                        # - RHS of target Non-Terminal exists
                         res = first(subrule)
-                        # if epsilon in result apply rule
-                        # - (A->aBX)- follow of -
-                        # - follow(B)=(first(X)-{ep}) U follow(A)
                         if "#" in res:
                             newList = []
                             res.remove("#")
@@ -206,13 +157,8 @@ def follow(nt):
                                 newList = res
                             res = newList
                     else:
-                        # when nothing in RHS, go circular
-                        # - and take follow of LHS
-                        # only if (NT in LHS)!=curNT
                         if nt != curNT:
                             res = follow(curNT)
-
-                    # add follow result in set form
                     if res is not None:
                         if type(res) is list:
                             for g in res:
@@ -251,8 +197,6 @@ def computeAllFirsts():
     for y in diction:
         print(f"{y}->{diction[y]}")
 
-    # calculate first for each rule
-    # - (call first() on all RHS)
     for y in list(diction.keys()):
         t = set()
         for sub in diction.get(y):
@@ -323,7 +267,6 @@ def createParseTable():
             f"{{:<{mx_len_fol + 5}}}".format(u, str(firsts[u]), str(follows[u]))
         )
 
-    # create matrix of row(NT) x [col(T) + 1($)]
     # create list of non-terminals
     ntlist = list(diction.keys())
     terminals = copy.deepcopy(term_userdef)
@@ -338,7 +281,6 @@ def createParseTable():
         # of $ append one more col
         mat.append(row)
 
-    # Classifying grammar as LL(1) or not LL(1)
     grammar_is_LL = True
 
     # rules implementation
@@ -346,8 +288,6 @@ def createParseTable():
         rhs = diction[lhs]
         for y in rhs:
             res = first(y)
-            # epsilon is present,
-            # - take union with follow
             if "#" in res:
                 if type(res) == str:
                     firstFollow = []
@@ -393,80 +333,6 @@ def createParseTable():
     return (mat, grammar_is_LL, terminals)
 
 
-def validateStringUsingStackBuffer(
-    parsing_table, grammarll1, table_term_list, input_string, term_userdef, start_symbol
-):
-    print(f"\nValidate String => {input_string}\n")
-
-    # for more than one entries
-    # - in one cell of parsing table
-    if grammarll1 == False:
-        return f"\nInput String = " f'"{input_string}"\n' f"Grammar is not LL(1)"
-
-    # implementing stack buffer
-
-    stack = [start_symbol, "$"]
-    buffer = []
-
-    # reverse input string store in buffer
-    input_string = input_string.split()
-    input_string.reverse()
-    buffer = ["$"] + input_string
-
-    print("{:>20} {:>20} {:>20}".format("Buffer", "Stack", "Action"))
-
-    while True:
-        # end loop if all symbols matched
-        if stack == ["$"] and buffer == ["$"]:
-            print(
-                "{:>20} {:>20} {:>20}".format(
-                    " ".join(buffer), " ".join(stack), "Valid"
-                )
-            )
-            return "\nValid String!"
-        elif stack[0] not in term_userdef:
-            # take font of buffer (y) and tos (x)
-            x = list(diction.keys()).index(stack[0])
-            y = table_term_list.index(buffer[-1])
-            if parsing_table[x][y] != "":
-                # format table entry received
-                entry = parsing_table[x][y]
-                print(
-                    "{:>20} {:>20} {:>25}".format(
-                        " ".join(buffer),
-                        " ".join(stack),
-                        f"T[{stack[0]}][{buffer[-1]}] = {entry}",
-                    )
-                )
-                lhs_rhs = entry.split("->")
-                lhs_rhs[1] = lhs_rhs[1].replace("#", "").strip()
-                entryrhs = lhs_rhs[1].split()
-                stack = entryrhs + stack[1:]
-            else:
-                return (
-                    f"\nInvalid String! No rule at " f"Table[{stack[0]}][{buffer[-1]}]."
-                )
-        else:
-            # stack top is Terminal
-            if stack[0] == buffer[-1]:
-                print(
-                    "{:>20} {:>20} {:>20}".format(
-                        " ".join(buffer), " ".join(stack), f"Matched:{stack[0]}"
-                    )
-                )
-                buffer = buffer[:-1]
-                stack = stack[1:]
-            else:
-                return "\nInvalid String! " "Unmatched terminal symbols"
-
-
-# DRIVER CODE - MAIN
-
-# NOTE: To test any of the sample sets, uncomment ->
-# 'rules' list, 'nonterm_userdef' list, 'term_userdef' list
-# and for any String validation uncomment following line with
-# 'sample_input_String' variable.
-
 sample_input_string = None
 
 
@@ -477,47 +343,16 @@ nonterm_userdef = ["A", "B", "C"]
 term_userdef = ["k", "O", "d", "a", "c", "b", "r"]
 sample_input_string = "a r k O"
 
-# sample set 8 (Multiple char symbols T & NT)
-# rules = ["S -> NP VP",
-# 		 "NP -> P | PN | D N",
-# 		 "VP -> V NP",
-# 		 "N -> championship | ball | toss",
-# 		 "V -> is | want | won | played",
-# 		 "P -> me | I | you",
-# 		 "PN -> India | Australia | Steve | John",
-# 		 "D -> the | a | an"]
-#
-# nonterm_userdef = ['S', 'NP', 'VP', 'N', 'V', 'P', 'PN', 'D']
-# term_userdef = ["championship", "ball", "toss", "is", "want",
-# 				 "won", "played", "me", "I", "you", "India",
-# 				 "Australia","Steve", "John", "the", "a", "an"]
-# sample_input_string = "India won the championship"
-
-# diction - store rules inputted
-# firsts - store computed firsts
 diction = {}
 firsts = {}
 follows = {}
 
-# computes all FIRSTs for all non terminals
 computeAllFirsts()
-# assuming first rule has start_symbol
-# start symbol can be modified in below line of code
 start_symbol = list(diction.keys())[0]
-# computes all FOLLOWs for all occurrences
 computeAllFollows()
-# generate formatted first and follow table
-# then generate parse table
 
 (parsing_table, result, tabTerm) = createParseTable()
 
-# validate string input using stack-buffer concept
-if sample_input_string != None:
-    validity = validateStringUsingStackBuffer(
-        parsing_table, result, tabTerm, sample_input_string, term_userdef, start_symbol
-    )
-    print(validity)
-else:
-    print("\nNo input String detected")
 
-# Author: Tanmay P. Bisen
+
+
