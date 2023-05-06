@@ -18,7 +18,6 @@ KEYWORDS = {
     'print': 'PRINT',
 }
 
-
 # Define a function to tokenize the input string
 def tokenize(input_string):
     tokens = []

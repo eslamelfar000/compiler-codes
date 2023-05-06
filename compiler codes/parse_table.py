@@ -1,23 +1,25 @@
 def calculate_first(grammar):
     first = {}
     for non_terminal in grammar:
-        first[non_terminal] = []
+        first[non_terminal] = set()
     while True:
         updated = False
         for non_terminal, productions in grammar.items():
             for production in productions:
+                # check if the symbol is terminal or non-terminal
                 if production[0] not in grammar:
+                    # check if this symbol isn't found in non-terminal list add it in first set
                     if production[0] not in first[non_terminal]:
-                        first[non_terminal].append(production[0])
+                        first[non_terminal].add(production[0])
                         updated = True
                 else:
                     for symbol in production:
                         if symbol not in first[non_terminal]:
-                            first[non_terminal].extend(first[symbol])
+                            first[non_terminal].update(first[symbol])
                             if 'epsilon' not in first[symbol]:
                                 break
                             if symbol == production[-1]:
-                                first[non_terminal].append('epsilon')
+                                first[non_terminal].add('epsilon')
                                 updated = True
         if not updated:
             break
@@ -27,9 +29,9 @@ def calculate_first(grammar):
 def calculate_follow(grammar, first):
     follow = {}
     for non_terminal in grammar:
-        follow[non_terminal] = []
+        follow[non_terminal] = set()
     start_symbol = list(grammar.keys())[0]
-    follow[start_symbol].append('$')
+    follow[start_symbol].add('$')
     while True:
         updated = False
         for non_terminal, productions in grammar.items():
@@ -37,26 +39,24 @@ def calculate_follow(grammar, first):
                 for i, symbol in enumerate(production):
                     if symbol in grammar:
                         rest = production[i+1:]
-                        first_rest = []
+                        first_rest = set()
                         for s in rest:
                             if s in grammar:
                                 first_s = first[s]
-                                first_rest += [x for x in first_s if x not in first_rest and x != 'epsilon']
+                                first_rest |= first_s - {'epsilon'}
                                 if 'epsilon' not in first_s:
                                     break
                             else:
-                                first_rest.append(s)
+                                first_rest.add(s)
                                 break
                         else:
-                            follow[non_terminal] += follow[symbol]
-                            first_rest += follow[symbol]
-                        if not set(first_rest).issubset(set(follow[symbol])):
-                            follow[symbol] += first_rest
+                            first_rest |= follow[non_terminal]
+                        if not follow[symbol].issuperset(first_rest):
+                            follow[symbol] |= first_rest
                             updated = True
         if not updated:
             break
     return follow
-
 
 def create_parse_table(grammar, first, follow):
     parse_table = {}
@@ -97,11 +97,10 @@ grammar = {
     'B': ['b'],
     'C': ['A C', 'd']
 }
-
 first = calculate_first(grammar)
 follow = calculate_follow(grammar, first)
 parse_table = create_parse_table(grammar, first, follow)
 
-print('first set \n',first)
-print('follow set \n',follow)
-print('parse table \n',parse_table)
+print('first set \n',first, '\n')
+print('follow set \n',follow, '\n')
+print('parse table \n',parse_table, '\n')
