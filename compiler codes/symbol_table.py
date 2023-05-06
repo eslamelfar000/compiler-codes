@@ -4,7 +4,6 @@ symbol_table = {}
 # Define data type bytes
 data_types = {"int": 4, "char": 1, "bool": 2, "float": 4}
 
-
 # Define a function to add a new entry to the symbol table
 def add_entry(
     name, type, object_address, dimension_num, line_declaration, line_references
@@ -16,7 +15,6 @@ def add_entry(
         "Line Declaration": line_declaration,
         "Line References": line_references,
     }
-
 
 # Define a function to parse the input code and generate the symbol table
 def parse_code(input_code):
